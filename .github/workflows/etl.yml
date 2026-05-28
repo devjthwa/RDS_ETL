@@ -9,18 +9,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # 1. Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      # 2. Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # 3. Install dependencies
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
+      # 4. Debug network (IMPORTANT for your issue)
+      - name: Test DB connectivity
+        run: |
+          nc -zv database-1.cpo2wows09qf.ap-south-1.rds.amazonaws.com 5432 || true
+
+      # 5. Run ETL job
       - name: Run ETL
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+          # 🔥 ADD THESE (MOST PEOPLE MISS THIS)
+          DB_HOST: database-1.cpo2wows09qf.ap-south-1.rds.amazonaws.com
+          DB_PORT: 5432
+          DB_NAME: postgres
+          DB_USER: postgres
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
         run: python etl_job.py
